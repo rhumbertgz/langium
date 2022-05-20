@@ -56,6 +56,8 @@ export class LangiumGrammarValidationRegistry extends ValidationRegistry {
             ],
             GrammarImport: validator.checkPackageImport,
             CharacterRange: validator.checkInvalidCharacterRange,
+            Interface: validator.checkTypeRecursion,
+            Type: validator.checkTypeRecursion,
             RuleCall: [
                 validator.checkUsedHiddenTerminalRule,
                 validator.checkUsedFragmentTerminalRule,
@@ -419,6 +421,48 @@ export class LangiumGrammarValidator {
 
     checkTypesConsistency(grammar: ast.Grammar, accept: ValidationAcceptor): void {
         validateTypesConsistency(grammar, accept);
+    }
+
+    checkTypeRecursion(type: ast.Interface | ast.Type, accept: ValidationAcceptor): void {
+        if (this.findTypeCycles(type)) {
+            accept('error', `Type '${type.name}' recursively references itself as a base type.`, {
+                node: type,
+                property: 'name'
+            });
+        }
+    }
+
+    private findTypeCycles(type: ast.AbstractType, visited: Set<ast.AbstractType> = new Set()): boolean {
+        if (visited.has(type)) {
+            return true;
+        }
+        visited.add(type);
+        const inherits: ast.AbstractType[] = [];
+        if (ast.isInterface(type)) {
+            for (const superType of type.superTypes.map(e => e.ref)) {
+                if (superType) {
+                    inherits.push(superType);
+                }
+            }
+        } else if (ast.isParserRule(type)) {
+            const returnType = type.returnType?.ref;
+            if (returnType) {
+                inherits.push(returnType);
+            }
+        } else if (ast.isType(type)) {
+            for (const atom of type.typeAlternatives) {
+                const refType = atom.refType?.ref;
+                if (refType) {
+                    inherits.push(refType);
+                }
+            }
+        }
+        for (const inherited of inherits) {
+            if (this.findTypeCycles(inherited, visited)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     checkPropertyNameDuplication(grammar: ast.Grammar, accept: ValidationAcceptor): void {
