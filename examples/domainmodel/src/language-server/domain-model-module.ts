@@ -11,6 +11,7 @@ import { DomainModelScopeComputation } from './domain-model-scope';
 import { DomainModelDescriptionProvider } from './domain-model-index';
 import { DomainModelNameProvider } from './domain-model-naming';
 import { DomainModelFormatter } from './domain-model-formatter';
+import { DomainModelRenameHandler } from './domain-model-rename-refactoring';
 
 export type DomainModelAddedServices = {
     validation: {
@@ -33,7 +34,8 @@ export const DomainModelModule: Module<DomainModelServices, PartialLangiumServic
         AstNodeDescriptionProvider: (services) => new DomainModelDescriptionProvider(services)
     },
     lsp: {
-        Formatter: () => new DomainModelFormatter()
+        Formatter: () => new DomainModelFormatter(),
+        RenameHandler: (services) => new DomainModelRenameHandler(services)
     }
 };
 
