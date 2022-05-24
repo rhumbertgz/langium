@@ -449,8 +449,60 @@ function flattenTypes(alternatives: TypeAlternative[]): TypeAlternative[] {
         }
         type.ruleCalls = Array.from(ruleCalls);
         types.push(type);
+
     }
 
+    // 1st sketch at merging child properties up to a super type
+    // still unsure if this is the 'right' location to do this
+    //
+    // afterwards, we have merged types alternatives, but we haven't factored in properties that can be updated for parents
+    // for each type in the list
+    // check the 'super' property
+    // look for any other types that have the name of any super property
+    // for each match, see if any properties match
+    // for each matching property, remove it from the child, and add it to the parent
+    // unless it's already present, then drop it, only new entries
+    // in the end we should see the right properties 'bubble' up.
+    // have to repeat this process for each modified parent, otherwise we risk missing some upward propagation that can occur
+
+    // breadth-first search should use a queue to make that happen
+
+    // note, it's quite possible that I can merge the children types w/ their parents earlier in the process...rather than later?
+    // but it would be a bit before this point...
+    const typeQueue = Array.from(types);
+    while(typeQueue.length > 0) {
+        const type = typeQueue.splice(0,1)[0];
+        const superTypes = types.filter(t => type.super.includes(t.name));
+        superTypes.forEach(st => {
+            // for each 'child' property...used in dropping, not present
+            //const dropChildren : Property[] = [];
+            let modified = false;
+            type.properties.forEach(childProp => {
+                const superProp = st.properties.find(e => e.name === childProp.name);
+                if(superProp) {
+                    childProp.typeAlternatives
+                        .filter(isNotInTypeAlternatives(superProp.typeAlternatives))
+                        .forEach(typeAlt => {
+                            superProp.typeAlternatives.push(typeAlt);
+                            modified = true;
+                        });
+                    // drop the child prop ?
+                    //dropChildren.push(childProp);
+                    //type.properties = type.properties.splice(type.properties.indexOf(childProp), 1);
+                }
+            });
+
+            if(modified) {
+                // super type modified, we may need to evaluate it again
+                typeQueue.push(st);
+            }
+
+            // used in dropping...
+            // dropChildren.forEach(dc => {
+            //     type.properties = type.properties.splice(type.properties.indexOf(dc), 1);
+            // });
+        });
+    }
     return types;
 }
 

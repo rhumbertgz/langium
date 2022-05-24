@@ -495,6 +495,46 @@ describeTypes('inferred types with common names', `
 
 });
 
+describeTypes('inferred types with shared properties', `
+    // this is a workable case
+    OrAndAssignmentExpression infers Expression:
+        OrExpression ({infer AssignmentExpression.left=current} operator=':' right=OrExpression)*;
+
+    // Dummy rule to make AssignmentExpression inherit from BinaryExpression
+    AssignmentExpression infers BinaryExpression:
+        {infer AssignmentExpression} left=ID operator=':' right=OrExpression;
+
+    OrExpression infers Expression:
+	    AndExpression ({infer BinaryExpression.left=current} operator='Or' right=AndExpression)*;
+
+    AndExpression infers Expression:
+	    ValueExpression ({infer BinaryExpression.left=current} operator='And' right=ValueExpression)*;
+
+    ValueExpression infers Expression:
+	    value=BOOL | value=ID;
+
+    terminal BOOL returns boolean: /(true)|(false)/;
+    terminal ID: /[_a-zA-Z][\\w_]*/;
+`, types => {
+    test('verify correct property types lift to parent node', () => {
+        const binExpType = getType(types, 'BinaryExpression') as InterfaceType;
+        const assignType = getType(types, 'AssignmentExpression') as InterfaceType;
+        const exprType = getType(types, 'Expression') as UnionType;
+
+        // verify all these types are defined
+        expect(binExpType).toBeDefined();
+        expect(assignType).toBeDefined();
+        expect(exprType).toBeDefined();
+
+        // verify the operator property of 'BinaryExpression' is present, & has all 3 alternatives
+        // i.e., type ':' is moved up from 'AssignmentExpression'
+        expect(binExpType.properties[1]).toHaveProperty('name', 'operator');
+        expect(binExpType.properties[1].typeAlternatives).toHaveLength(3);
+        // next bit is to verify the actual properties themselves...
+        //expect(binExpType.properties[1].typeAlternatives).toBe(['Or','And',':']);
+    });
+});
+
 describeTypes('inferred types with common names and actions', `
     A infers X: {infer A} a=ID;
 	B infers X: {infer B} b=ID;
