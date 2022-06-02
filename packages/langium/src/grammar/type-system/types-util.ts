@@ -11,22 +11,31 @@ import { CstNode } from '../../syntax-tree';
 import { getDocument } from '../../utils/ast-util';
 import { MultiMap } from '../../utils/collections';
 import { LangiumDocuments } from '../../workspace/documents';
-import { Grammar, Interface, isParserRule, ParserRule, Type } from '../generated/ast';
+import { Action, Grammar, Interface, isParserRule, ParserRule, Type } from '../generated/ast';
 import { isDataTypeRule, resolveImport } from '../grammar-util';
 
-export type Property = {
+export interface Property {
     name: string,
     optional: boolean,
     typeAlternatives: PropertyType[]
 }
 
-export type PropertyType = {
+export interface PropertyType {
     types: string[],
     reference: boolean,
     array: boolean
 }
 
-export type AstTypes = {
+export interface RawType {
+    name: string
+    super: string[]
+    properties: Property[]
+    ruleCalls: string[]
+    origin?: ParserRule | Action
+}
+
+export interface AstTypes {
+    raw: RawType[]
     interfaces: InterfaceType[];
     unions: UnionType[];
 }

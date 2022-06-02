@@ -131,3 +131,103 @@ describe('Check grammar with primitives', () => {
         expectNoIssues(validationResult);
     });
 });
+
+describe('Structural property validation of declared types', () => {
+
+    const grammar = `
+    grammar StructuralGrammar
+    
+    interface Base {
+        name: string;
+    }
+
+    interface Extends extends Base {
+        count: number;
+    }
+
+    entry Main: ValidBaseUse | InvalidBaseUse | InvalidExtendsUse | ValidExtendsUse;
+
+    ValidBaseUse returns Base: name=ID;
+    InvalidBaseUse returns Base: name=NUM;
+    InvalidExtendsUse returns Extends: name=ID;
+    ValidExtendsUse returns Extends: name=ID count=NUM;
+
+    terminal ID: '';
+    terminal NUM returns number: '';
+    `;
+
+    let validationResult: ValidationResult<Grammar>;
+
+    // 1. build a parser from this grammar, verify it works
+    beforeAll(async () => {
+        validationResult = await validate(grammar);
+    });
+
+    test('No validation errors on `ValidBaseUse`', () => {
+        const validBaseUse = validationResult.document.parseResult.value.rules[1];
+        expectNoIssues(validationResult, {
+            node: validBaseUse,
+            property: { name: 'name' }
+        });
+    });
+
+    test('No validation errors on `ValidExtendsUse`', () => {
+        const validExtendsUse = validationResult.document.parseResult.value.rules[4];
+        expectNoIssues(validationResult, {
+            node: validExtendsUse,
+            property: { name: 'name' }
+        });
+    });
+
+    test('Validation error on `InvalidBaseUse`', () => {
+        const invalidBaseUse = validationResult.document.parseResult.value.rules[2] as ParserRule;
+        const nameAssignment = invalidBaseUse.alternatives as Assignment;
+        expectError(validationResult, "The assigned type 'number' is not compatible with the declared property 'name' of type 'string'.", {
+            node: nameAssignment,
+            property: { name: 'feature' }
+        });
+    });
+
+});
+
+describe('Extending existing interfaces', () => {
+
+    const grammar = `
+    grammar StructuralGrammar
+    
+    interface ValidBase {
+        name: string;
+    }
+
+    interface ValidExtends extends ValidBase {
+        count: number;
+    }
+
+    interface InvalidExtends extends ValidBase {
+        name: string; // Cannot redeclare properties
+    }
+
+    interface ValidBase2 {
+        name: number;
+    }
+
+    interface InvalidBaseMerge extends ValidBase, ValidBase2 {
+        // Cannot merge both of the 'name' properties
+    }
+
+    entry Test: name=ID;
+    terminal ID: '';
+    `;
+
+    let validationResult: ValidationResult<Grammar>;
+
+    // 1. build a parser from this grammar, verify it works
+    beforeAll(async () => {
+        validationResult = await validate(grammar);
+    });
+
+    test('No validation errors in grammar', () => {
+        expectNoIssues(validationResult);
+    });
+
+});

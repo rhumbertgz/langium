@@ -4,12 +4,12 @@
  * terms of the MIT License, which is available in the project root.
  ******************************************************************************/
 
-import { Grammar, Interface, ParserRule, Type } from '../generated/ast';
+import { Action, Grammar, Interface, ParserRule, Type } from '../generated/ast';
 import { getRuleType } from '../grammar-util';
 import { MultiMap } from '../../utils/collections';
 import { collectDeclaredTypes } from './declared-types';
-import { collectInferredTypes } from './inferred-types';
-import { AstTypes, collectAllAstResources, distictAndSorted, Property, PropertyType, propertyTypeArrayToString, InterfaceType, UnionType, AstResources } from './types-util';
+import { calculateAst, collectInferredTypes } from './inferred-types';
+import { AstTypes, collectAllAstResources, distictAndSorted, Property, PropertyType, propertyTypeArrayToString, InterfaceType, UnionType, AstResources, RawType } from './types-util';
 import { stream } from '../../utils/stream';
 import { ValidationAcceptor } from '../../validation/validation-registry';
 import { extractAssignments } from '../../utils/ast-util';
@@ -155,7 +155,7 @@ function arePropTypesIdentical(a: Property, b: Property): boolean {
 function collectAllSuperProperties(
     type: InterfaceType,
     mode: 'inferred' | 'declared',
-    resources: ValidationResources,
+    resources: Map<string, TypeInfo>,
     map: MultiMap<string, Property> = new MultiMap(),
     visitedTypes: Set<string> = new Set()
 ): MultiMap<string, Property> {
@@ -201,9 +201,18 @@ function isInterface(type: TypeOption): type is InterfaceType {
     return type && 'properties' in type;
 }
 
+interface InterfaceRuleInfo {
+    inferred: InterfaceType
+    origin: ParserRule | Action
+}
+
+interface UnionRuleInfo {
+    inferred: UnionType
+    origin?: ParserRule // todo: figure out which rules contribute to a union type
+}
+
 interface InferredInfo {
-    inferred: TypeOption;
-    nodes: readonly ParserRule[];
+    items: readonly InterfaceRuleInfo[] | UnionRuleInfo
 }
 
 interface DeclaredInfo {
@@ -211,35 +220,82 @@ interface DeclaredInfo {
     node: Type | Interface;
 }
 
-function isInferredAndDeclared(type: InferredInfo | DeclaredInfo | InferredInfo & DeclaredInfo): type is InferredInfo & DeclaredInfo {
+type TypeInfo = InferredInfo | DeclaredInfo | InferredInfo & DeclaredInfo;
+
+function isInferredAndDeclared(type: TypeInfo): type is InferredInfo & DeclaredInfo {
     return type && 'inferred' in type && 'declared' in type;
 }
 
-type ValidationResources = Map<string, InferredInfo | DeclaredInfo | InferredInfo & DeclaredInfo>;
-
-export function collectValidationResources(grammar: Grammar): ValidationResources {
+export function collectValidationResources(grammar: Grammar): Map<string, TypeInfo> {
     const astResources = collectAllAstResources([grammar]);
     const inferred = collectInferredTypes(Array.from(astResources.parserRules), Array.from(astResources.datatypeRules));
     const declared = collectDeclaredTypes(Array.from(astResources.interfaces), Array.from(astResources.types), inferred);
 
-    const typeNameToRules = getTypeNameToRules(astResources);
-    const inferredInfo = mergeTypesAndInterfaces(inferred)
-        .reduce((acc, type) => acc.set(type.name, { inferred: type, nodes: typeNameToRules.get(type.name) }),
-            new Map<string, InferredInfo>()
-        );
+    const typeInfos = new Map<string, TypeInfo>();
 
-    const allTypesInfo = mergeTypesAndInterfaces(declared)
-        .reduce((acc, type) => {
-            const node = stream(astResources.types).find(e => e.name === type.name) ??
-                stream(astResources.interfaces).find(e => e.name === type.name);
-            if (node) {
-                const inferred = inferredInfo.get(type.name);
-                acc.set(type.name, inferred ? {...inferred, declared: type, node } : { declared: type, node });
-            }
-            return acc;
-        }, new Map<string, InferredInfo | DeclaredInfo | InferredInfo & DeclaredInfo>());
+    const mergedInterfaces = mergeRawTypes(inferred.raw);
 
-    return allTypesInfo;
+    for (const declaredType of mergeTypesAndInterfaces(declared)) {
+        const node = stream(astResources.types).find(e => e.name === declaredType.name) ??
+            stream(astResources.interfaces).find(e => e.name === declaredType.name) as Type | Interface;
+        const existingInterfaces = mergedInterfaces.get(declaredType.name);
+        if (existingInterfaces) {
+            typeInfos.set(declaredType.name, {
+                declared: declaredType,
+                items: existingInterfaces,
+                node
+            });
+        } else {
+            const inferredUnion = inferred.unions.find(e => e.name === declaredType.name);
+            typeInfos.set(declaredType.name, {
+                declared: declaredType,
+                items: inferredUnion && {
+                    inferred: inferredUnion
+                },
+                node
+            });
+        }
+    }
+
+    for (const [origin, groupedInterfaces] of mergedInterfaces.entriesGroupedByKey()) {
+        if (!typeInfos.has(origin)) {
+            typeInfos.set(origin, {
+                items: groupedInterfaces
+            });
+        }
+    }
+
+    for (const inferredUnion of inferred.unions) {
+        if (!typeInfos.has(inferredUnion.name)) {
+            typeInfos.set(inferredUnion.name, {
+                items: {
+                    inferred: inferredUnion
+                }
+            });
+        }
+    }
+
+    return typeInfos;
+}
+
+function mergeRawTypes(rawTypes: RawType[]): MultiMap<string, InterfaceRuleInfo> {
+    const map = new MultiMap<ParserRule | Action, RawType>();
+    for (const rawType of rawTypes) {
+        if (rawType.origin) {
+            map.add(rawType.origin, rawType);
+        }
+    }
+    const result = new MultiMap<string, InterfaceRuleInfo>();
+    for (const [origin, groupedTypes] of map.entriesGroupedByKey()) {
+        const interfaceType = calculateAst(groupedTypes)[0];
+
+        result.add(interfaceType.name, {
+            inferred: interfaceType,
+            origin
+        });
+    }
+
+    return result;
 }
 
 function getTypeNameToRules(astResources: AstResources): MultiMap<string, ParserRule> {

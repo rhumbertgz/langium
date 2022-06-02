@@ -30,6 +30,7 @@ export function collectAst(documents: LangiumDocuments, grammars: Grammar[]): As
     return {
         interfaces: stream(interfaces).distinct(e => e.name).toArray(),
         unions: stream(types).distinct(e => e.name).toArray(),
+        raw: inferred.raw
     };
 }
 

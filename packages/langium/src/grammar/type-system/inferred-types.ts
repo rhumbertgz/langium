@@ -7,11 +7,12 @@
 import { getExplicitRuleType, getRuleType, getTypeName, isOptional } from '../grammar-util';
 import { AbstractElement, Action, Alternatives, Assignment, Group, isAction, isAlternatives, isAssignment, isCrossReference, isGroup, isKeyword, isParserRule, isRuleCall, isUnorderedGroup, ParserRule, RuleCall, UnorderedGroup } from '../generated/ast';
 import { stream } from '../../utils/stream';
-import { AstTypes, distictAndSorted, Property, PropertyType, InterfaceType, UnionType } from './types-util';
+import { AstTypes, distictAndSorted, Property, PropertyType, InterfaceType, UnionType, RawType } from './types-util';
 import { MultiMap } from '../../utils/collections';
 
 interface TypePart {
     name?: string
+    origin?: ParserRule | Action
     properties: Property[]
     ruleCalls: string[]
     parents: TypePart[]
@@ -19,20 +20,17 @@ interface TypePart {
     actionWithAssignment: boolean
 }
 
-type TypeAlternative = {
-    name: string
-    super: string[]
-    properties: Property[]
-    ruleCalls: string[]
-}
-
 type TypeCollection = {
     types: Set<string>,
     reference: boolean
 }
 
-function copy<T>(value: T): T {
-    return JSON.parse(JSON.stringify(value));
+function copyRawType(value: RawType): RawType {
+    const origin = value.origin;
+    value.origin = undefined;
+    value = JSON.parse(JSON.stringify(value));
+    value.origin = origin;
+    return value;
 }
 
 function collectSuperTypes(original: TypePart, part: TypePart, set: Set<string>): void {
@@ -62,7 +60,7 @@ interface TypeCollectionContext {
 }
 
 interface TypePath {
-    alt: TypeAlternative
+    raw: RawType
     next: TypePart[]
 }
 
@@ -75,25 +73,26 @@ class TypeGraph {
         this.root = root;
     }
 
-    getTypes(): TypeAlternative[] {
-        const rootType: TypeAlternative = {
+    getTypes(): RawType[] {
+        const rootType: RawType = {
             name: this.root.name!,
             properties: this.root.properties,
             ruleCalls: this.root.ruleCalls,
-            super: []
+            super: [],
+            origin: this.root.origin
         };
         if (this.root.children.length === 0) {
             return [rootType];
         } else {
             return this.applyNext(this.root, {
-                alt: rootType,
+                raw: rootType,
                 next: this.root.children
-            }).map(e => e.alt);
+            }).map(e => e.raw);
         }
     }
 
     private applyNext(root: TypePart, nextPath: TypePath): TypePath[] {
-        const splits = this.splitType(nextPath.alt, nextPath.next.length);
+        const splits = this.splitType(nextPath.raw, nextPath.next.length);
         const paths: TypePath[] = [];
         for (let i = 0; i < nextPath.next.length; i++) {
             const split = splits[i];
@@ -102,7 +101,7 @@ class TypeGraph {
                 // If the path enters an action with an assignment which changes the current name
                 // We already add a new path, since the next part of the part refers to a new inferred type
                 paths.push({
-                    alt: copy(split),
+                    raw: copyRawType(split),
                     next: []
                 });
             }
@@ -120,12 +119,13 @@ class TypeGraph {
             }
             split.properties.push(...part.properties);
             split.ruleCalls.push(...part.ruleCalls);
+            split.origin = part.origin;
             const path: TypePath = {
-                alt: split,
+                raw: split,
                 next: part.children
             };
             if (path.next.length === 0) {
-                path.alt.super = path.alt.super.filter(e => e !== path.alt.name);
+                path.raw.super = path.raw.super.filter(e => e !== path.raw.name);
                 paths.push(path);
             } else {
                 paths.push(...this.applyNext(root, path));
@@ -134,10 +134,10 @@ class TypeGraph {
         return paths;
     }
 
-    private splitType(type: TypeAlternative, count: number): TypeAlternative[] {
-        const alternatives: TypeAlternative[] = [];
+    private splitType(type: RawType, count: number): RawType[] {
+        const alternatives: RawType[] = [];
         for (let i = 0; i < count; i++) {
-            alternatives.push(copy(type));
+            alternatives.push(copyRawType(type));
         }
         return alternatives;
     }
@@ -171,7 +171,7 @@ class TypeGraph {
 
 export function collectInferredTypes(parserRules: ParserRule[], datatypeRules: ParserRule[]): AstTypes {
     // extract interfaces and types from parser rules
-    const allTypes: TypeAlternative[] = [];
+    const allTypes: RawType[] = [];
     const context: TypeCollectionContext = {
         fragments: new Map()
     };
@@ -181,7 +181,7 @@ export function collectInferredTypes(parserRules: ParserRule[], datatypeRules: P
     const interfaces = calculateAst(allTypes);
     buildContainerTypes(interfaces);
     const unions = buildSuperUnions(interfaces);
-    const inferredTypes = extractTypes(interfaces, unions);
+    const inferredTypes = extractTypes(interfaces, unions, allTypes);
 
     // extract types from datatype rules
     for (const rule of datatypeRules) {
@@ -218,16 +218,27 @@ function buildSuperUnions(interfaces: InterfaceType[]): UnionType[] {
     return unions;
 }
 
-function getRuleTypes(context: TypeCollectionContext, rule: ParserRule): TypeAlternative[] {
+function getRuleTypes(context: TypeCollectionContext, rule: ParserRule): RawType[] {
     const type = newTypePart(rule);
     const graph = new TypeGraph(context, type);
     collectElement(graph, graph.root, rule.alternatives);
     return graph.getTypes();
 }
 
-function newTypePart(rule?: ParserRule | string): TypePart {
+function newTypePart(origin?: ParserRule | Action): TypePart {
+    let name: string | undefined;
+    if (isParserRule(origin)) {
+        name = getTypeName(origin);
+    } else if (isAction(origin)) {
+        if (origin.inferredType) {
+            name = getTypeName(origin.inferredType);
+        } else if (origin.type?.ref) {
+            name = getTypeName(origin.type.ref);
+        }
+    }
     return {
-        name: isParserRule(rule) ? getTypeName(rule) : rule,
+        name,
+        origin: origin,
         properties: [],
         ruleCalls: [],
         children: [],
@@ -275,7 +286,7 @@ function collectElement(graph: TypeGraph, current: TypePart, element: AbstractEl
 }
 
 function addAction(graph: TypeGraph, parent: TypePart, action: Action): TypePart {
-    const typeNode = graph.connect(parent, newTypePart(action.inferredType?.name));
+    const typeNode = graph.connect(parent, newTypePart(action));
 
     if (action.feature && action.operator) {
         typeNode.actionWithAssignment = true;
@@ -373,13 +384,13 @@ function getFragmentProperties(fragment: ParserRule, context: TypeCollectionCont
 /**
  * Calculate interfaces from all possible type branches.
  * [some of these interfaces will become types in the generated AST]
- * @param alternatives The type branches that will be squashed in interfaces.
+ * @param rawTypes The type branches that will be squashed in interfaces.
  * @returns Interfaces.
  */
-function calculateAst(alternatives: TypeAlternative[]): InterfaceType[] {
+export function calculateAst(rawTypes: RawType[]): InterfaceType[] {
     const interfaces = new Map<string, InterfaceType>();
-    const ruleCallAlternatives: TypeAlternative[] = [];
-    const flattened = flattenTypes(alternatives);
+    const ruleCallAlternatives: RawType[] = [];
+    const flattened = flattenTypes(rawTypes);
 
     for (const flat of flattened) {
         const interfaceType = new InterfaceType(flat.name, flat.super, flat.properties);
@@ -409,14 +420,14 @@ function calculateAst(alternatives: TypeAlternative[]): InterfaceType[] {
     return Array.from(interfaces.values());
 }
 
-function flattenTypes(alternatives: TypeAlternative[]): TypeAlternative[] {
-    const nameToAlternatives = alternatives.reduce((acc, e) => acc.add(e.name, e), new MultiMap<string, TypeAlternative>());
-    const types: TypeAlternative[] = [];
+function flattenTypes(alternatives: RawType[]): RawType[] {
+    const nameToAlternatives = alternatives.reduce((acc, e) => acc.add(e.name, e), new MultiMap<string, RawType>());
+    const types: RawType[] = [];
 
     for (const [name, namedAlternatives] of nameToAlternatives.entriesGroupedByKey()) {
         const properties: Property[] = [];
         const ruleCalls = new Set<string>();
-        const type: TypeAlternative = { name, properties, ruleCalls: [], super: [] };
+        const type: RawType = { name, properties, ruleCalls: [], super: [] };
         for (const alt of namedAlternatives) {
             type.super.push(...alt.super);
             const altProperties = alt.properties;
@@ -532,8 +543,8 @@ function shareContainerTypes(connectedComponents: InterfaceType[][]): void {
  * @param interfaces The interfaces that have to be transformed on demand.
  * @returns Types and not transformed interfaces.
  */
-function extractTypes(interfaces: InterfaceType[], unions: UnionType[]): AstTypes {
-    const astTypes: AstTypes = { interfaces: [], unions };
+function extractTypes(interfaces: InterfaceType[], unions: UnionType[], rawTypes: RawType[]): AstTypes {
+    const astTypes: AstTypes = { interfaces: [], unions, raw: rawTypes };
     const typeNames = new Set<string>(unions.map(e => e.name));
     for (const interfaceType of interfaces) {
         // the criterion for converting an interface into a type

@@ -19,7 +19,7 @@ export function collectDeclaredTypes(interfaces: Interface[], types: Type[], inf
         }
     }
 
-    const declaredTypes: AstTypes = { unions: [], interfaces: [] };
+    const declaredTypes: AstTypes = { unions: [], interfaces: [], raw: [] };
     // add interfaces
     for (const interfaceType of interfaces) {
         const superTypes = interfaceType.superTypes.filter(e => e.ref).map(e => getTypeName(e.ref!));
