@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 import { AstNode, getDocument, LangiumDocument, ReferenceDescription } from 'langium';
-import { parseDocument } from 'langium/lib/test';
+import { parseDocument } from 'langium/test';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
 import { createDomainModelServices } from '../src/language-server/domain-model-module';

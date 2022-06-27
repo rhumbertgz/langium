@@ -175,4 +175,4 @@ class LangiumGenerator extends Generator {
     }
 }
 
-export = LangiumGenerator;
+export default LangiumGenerator;

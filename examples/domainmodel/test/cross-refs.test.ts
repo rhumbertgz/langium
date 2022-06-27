@@ -5,7 +5,7 @@
  ******************************************************************************/
 
 import { AstNode, LangiumDocument, ReferenceDescription } from 'langium';
-import { parseDocument } from 'langium/lib/test';
+import { parseDocument } from 'langium/test';
 import { createDomainModelServices } from '../src/language-server/domain-model-module';
 import { Domainmodel } from '../src/language-server/generated/ast';
 
