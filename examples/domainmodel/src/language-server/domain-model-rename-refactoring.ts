@@ -4,11 +4,13 @@
  * terms of the MIT License, which is available in the project root.
  ******************************************************************************/
 
-import { AstNode, CstNode, DefaultRenameHandler, findLeafNodeAtOffset, flattenCst, getDocument, isReference, LangiumDocument, LangiumDocuments, LangiumServices, MaybePromise, streamAst} from 'langium';
+import { AstNode, CstNode, DefaultRenameHandler, findLeafNodeAtOffset, flattenCst, getDocument, isNamed, isReference, LangiumDocument, LangiumDocuments, LangiumServices, LeafCstNode, MaybePromise, ReferenceDescription, streamAst} from 'langium';
 import { WorkspaceEdit, Location, Range, ReferenceParams } from 'vscode-languageserver';
 import { RenameParams } from 'vscode-languageserver-protocol';
 import { TextEdit } from 'vscode-languageserver-types';
 import { URI } from 'vscode-uri';
+import { DomainModelNameProvider } from './domain-model-naming';
+import {isPackageDeclaration, PackageDeclaration} from './generated/ast';
 
 export class DomainModelRenameHandler extends DefaultRenameHandler {
 
@@ -18,7 +20,7 @@ export class DomainModelRenameHandler extends DefaultRenameHandler {
         this.langiumDocuments = services.shared.workspace.LangiumDocuments;
     }
 
-    async renameElement(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
+    async renameElementOld(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
         const changes: Record<string, TextEdit[]> = {};
         const references = await this.getAllReferencesWithPrunedRanges(document, { ...params, context: { includeDeclaration: true } });
         if (!Array.isArray(references)) {
@@ -33,6 +35,89 @@ export class DomainModelRenameHandler extends DefaultRenameHandler {
             }
         });
         return { changes };
+    }
+
+    async renameElement(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
+        const changes: Record<string, TextEdit[]> = {};
+        const refParams: ReferenceParams = {...params, context: { includeDeclaration: true}};
+        const selectedNode = this.getSelectedNode(document, { ...params, context: { includeDeclaration: true } });
+        if (!selectedNode) return changes;
+        const targetAstNode = this.references.findDeclaration(selectedNode)?.element;
+        if (targetAstNode) {
+            // if (isPackageDeclaration(targetAstNode) || isDataType(targetAstNode)) {
+            //     targetAstNode.name = params.newName;
+            // }
+            if (isNamed(targetAstNode)) {
+                targetAstNode.name = params.newName;
+            }
+            const location = this.getLocationTargetAst(targetAstNode, selectedNode, refParams);
+            if (location) {
+                const change = TextEdit.replace(location.range, params.newName);
+                if (changes[location.uri]) {
+                    changes[location.uri].push(change);
+                } else {
+                    changes[location.uri] = [change];
+                }
+            }
+            for (const node of streamAst(targetAstNode)) {
+                const  qn = this.buildQualifiedName(node);
+                if (qn) {
+                    this.references.findReferences(node).forEach(reference => {
+                        const nodeLocation = this.getRefLocation(reference);
+                        const nodeChange = TextEdit.replace(nodeLocation.range, qn);
+                        if (changes[nodeLocation.uri]) {
+                            changes[nodeLocation.uri].push(nodeChange);
+                        } else {
+                            changes[nodeLocation.uri] = [nodeChange];
+                        }
+                    });
+                }
+            }
+        }
+
+        return { changes };
+    }
+
+    getRefLocation(ref: ReferenceDescription): Location {
+        return Location.create(
+            ref.sourceUri.toString(),
+            ref.segment.range
+        );
+    }
+
+    getLocationTargetAst(target: AstNode, selectedNode: LeafCstNode, params: ReferenceParams): Location | undefined {
+        if (params.context.includeDeclaration) {
+            const declDoc = getDocument(target);
+            const nameNode = this.findNameNode(target, selectedNode.text);
+            if (nameNode) {
+                const ref = {docUri: declDoc.uri, range: nameNode.range };
+                return Location.create(
+                    ref.docUri.toString(),
+                    ref.range
+                );
+            }
+        }
+        return undefined;
+    }
+
+    getSelectedNode(document: LangiumDocument, params: ReferenceParams): LeafCstNode | undefined {
+        const rootNode = document.parseResult.value.$cstNode;
+        if (!rootNode) {
+            return undefined;
+        }
+        return findLeafNodeAtOffset(rootNode, document.textDocument.offsetAt(params.position));
+    }
+
+    getTargetAstNode(document: LangiumDocument, params: ReferenceParams): AstNode | undefined {
+        const rootNode = document.parseResult.value.$cstNode;
+        if (!rootNode) {
+            return undefined;
+        }
+        const selectedNode = findLeafNodeAtOffset(rootNode, document.textDocument.offsetAt(params.position));
+        if (!selectedNode) {
+            return undefined;
+        }
+        return this.references.findDeclaration(selectedNode)?.element;
     }
 
     getAllReferencesWithPrunedRanges(document: LangiumDocument, params: ReferenceParams): MaybePromise<Location[]> {
@@ -55,6 +140,13 @@ export class DomainModelRenameHandler extends DefaultRenameHandler {
                     refs.push({ docUri: declDoc.uri, range: nameNode.range });
             }
             for (const node of streamAst(targetAstNode)) {
+                const qn = this.buildQualifiedName(node);
+                const container = node.$container;
+                const nodeText = node.$cstNode?.text;
+                const containerText = container?.$cstNode?.text;
+                if (nodeText && containerText) {
+                    console.log('here_getAllRef ' + qn);
+                }
                 this.references.findReferences(node).forEach(reference => {
                     if (isReference(reference)) {
                         const adjustedRange = this.pruneRangeToNamePart(document.uri, reference.$refNode.range, selectedNode.text);
@@ -70,6 +162,16 @@ export class DomainModelRenameHandler extends DefaultRenameHandler {
             ref.docUri.toString(),
             ref.range
         ));
+    }
+
+    protected buildQualifiedName(node: AstNode): string | undefined {
+        let name = this.nameProvider.getName(node);
+        if (name) {
+            if (isPackageDeclaration(node.$container)) {
+                name = (this.nameProvider as DomainModelNameProvider).getQualifiedName(node.$container as PackageDeclaration, name);
+            }
+        }
+        return name;
     }
 
     protected pruneRangeToNamePart(uri: URI, completeRange: Range, nameToReplace: string): Range | undefined {
