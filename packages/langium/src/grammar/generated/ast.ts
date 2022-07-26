@@ -32,10 +32,6 @@ export function isCondition(item: unknown): item is Condition {
     return reflection.isInstance(item, Condition);
 }
 
-export type FeatureName = string;
-
-export type PrimitiveType = 'Date' | 'bigint' | 'boolean' | 'number' | 'string';
-
 export interface AbstractElement extends AstNode {
     readonly $container: Alternatives | Assignment | AtomType | CharacterRange | CrossReference | Group | NegatedToken | ParserRule | TerminalAlternatives | TerminalGroup | TerminalRule | UnorderedGroup | UntilToken;
     cardinality?: '*' | '+' | '?'
@@ -49,7 +45,7 @@ export function isAbstractElement(item: unknown): item is AbstractElement {
 
 export interface Action extends AbstractElement {
     readonly $container: Alternatives | Assignment | AtomType | CharacterRange | CrossReference | Group | NegatedToken | ParserRule | TerminalAlternatives | TerminalGroup | TerminalRule | UnorderedGroup | UntilToken;
-    feature?: FeatureName
+    feature?: string
     inferredType?: InferredType
     operator?: '+=' | '='
     type?: Reference<AbstractType>
@@ -74,7 +70,7 @@ export function isAlternatives(item: unknown): item is Alternatives {
 
 export interface Assignment extends AbstractElement {
     readonly $container: Alternatives | Assignment | AtomType | CharacterRange | CrossReference | Group | NegatedToken | ParserRule | TerminalAlternatives | TerminalGroup | TerminalRule | UnorderedGroup | UntilToken;
-    feature: FeatureName
+    feature: string
     operator: '+=' | '=' | '?='
     terminal: AbstractElement
 }
@@ -90,7 +86,7 @@ export interface AtomType extends AstNode {
     isArray: boolean
     isRef: boolean
     keywordType?: Keyword
-    primitiveType?: PrimitiveType
+    primitiveType?: string
     refType?: Reference<AbstractType>
 }
 
@@ -295,7 +291,7 @@ export function isParameterReference(item: unknown): item is ParameterReference 
 
 export interface ParserRule extends AstNode {
     readonly $container: Grammar;
-    dataType?: PrimitiveType
+    dataType?: string
     definesHiddenTokens: boolean
     definition: AbstractElement
     entry: boolean
@@ -327,7 +323,7 @@ export function isRegexToken(item: unknown): item is RegexToken {
 
 export interface ReturnType extends AstNode {
     readonly $container: TerminalRule;
-    name: PrimitiveType | string
+    name: string
 }
 
 export const ReturnType = 'ReturnType';

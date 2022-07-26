@@ -430,7 +430,7 @@ export class LangiumGrammarValidator {
                 } else if(superType.ref && ast.isParserRule(superType.ref)) {
                     // collect just the beginning of whatever inferred types this standalone rule produces
                     // looking to exclude anything that would be a union down the line
-                    const inferred = collectInferredTypes([superType.ref as ast.ParserRule], []);
+                    const inferred = collectInferredTypes([superType.ref]);
                     if(inferred.unions.length > 0) {
                         // inferred union type also cannot be extended
                         accept('error', `An interface cannot extend a union type, which was inferred from parser rule ${superType.ref.name}.`, { node: interfaceType, property: 'superTypes', index: i });

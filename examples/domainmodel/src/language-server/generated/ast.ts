@@ -15,8 +15,6 @@ export function isAbstractElement(item: unknown): item is AbstractElement {
     return reflection.isInstance(item, AbstractElement);
 }
 
-export type QualifiedName = string;
-
 export type Type = DataType | Entity;
 
 export const Type = 'Type';
@@ -75,7 +73,7 @@ export function isFeature(item: unknown): item is Feature {
 export interface PackageDeclaration extends AstNode {
     readonly $container: Domainmodel | PackageDeclaration;
     elements: Array<AbstractElement>
-    name: QualifiedName
+    name: string
 }
 
 export const PackageDeclaration = 'PackageDeclaration';

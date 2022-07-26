@@ -4,7 +4,7 @@
  * terms of the MIT License, which is available in the project root.
  ******************************************************************************/
 
-import { getExplicitRuleType, getRuleType, getTypeName, isOptional } from '../grammar-util';
+import { getRuleType, getTypeName, isOptional } from '../grammar-util';
 import { AbstractElement, Action, Alternatives, Assignment, Group, isAction, isAlternatives, isAssignment, isCrossReference, isGroup, isKeyword, isParserRule, isRuleCall, isUnorderedGroup, ParserRule, RuleCall, UnorderedGroup } from '../generated/ast';
 import { stream } from '../../utils/stream';
 import { AstTypes, distictAndSorted, Property, PropertyType, InterfaceType, UnionType } from './types-util';
@@ -169,7 +169,7 @@ class TypeGraph {
     }
 }
 
-export function collectInferredTypes(parserRules: ParserRule[], datatypeRules: ParserRule[]): AstTypes {
+export function collectInferredTypes(parserRules: ParserRule[]): AstTypes {
     // extract interfaces and types from parser rules
     const allTypes: TypeAlternative[] = [];
     const context: TypeCollectionContext = {
@@ -183,13 +183,6 @@ export function collectInferredTypes(parserRules: ParserRule[], datatypeRules: P
     const unions = buildSuperUnions(interfaces);
     const inferredTypes = extractTypes(interfaces, unions);
 
-    // extract types from datatype rules
-    for (const rule of datatypeRules) {
-        const types = isAlternatives(rule.definition) && rule.definition.elements.every(e => isKeyword(e)) ?
-            stream(rule.definition.elements).filter(isKeyword).map(e => `'${e.value}'`).toArray().sort() :
-            [getExplicitRuleType(rule) ?? 'string'];
-        inferredTypes.unions.push(new UnionType(rule.name, [<PropertyType>{ types, reference: false, array: false }]));
-    }
     return inferredTypes;
 }
 

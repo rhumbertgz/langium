@@ -353,8 +353,14 @@ function getActionType(action: ast.Action): string | undefined {
 export function getRuleType(rule: ast.AbstractRule): string {
     if (ast.isTerminalRule(rule)) {
         return rule.type?.name ?? 'string';
+    } else if (isDataTypeRule(rule)) {
+        return rule.dataType ?? 'string';
+    }
+    const explicitType = getExplicitRuleType(rule);
+    if (isDataTypeRule(rule)) {
+        return explicitType ?? 'string';
     } else {
-        return isDataTypeRule(rule) ? rule.name : getExplicitRuleType(rule) ?? rule.name;
+        return explicitType ?? rule.name;
     }
 }
 

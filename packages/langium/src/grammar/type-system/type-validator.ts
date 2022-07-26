@@ -219,7 +219,7 @@ type ValidationResources = Map<string, InferredInfo | DeclaredInfo | InferredInf
 
 export function collectValidationResources(grammar: Grammar): ValidationResources {
     const astResources = collectAllAstResources([grammar]);
-    const inferred = collectInferredTypes(Array.from(astResources.parserRules), Array.from(astResources.datatypeRules));
+    const inferred = collectInferredTypes(Array.from(astResources.parserRules));
     const declared = collectDeclaredTypes(Array.from(astResources.interfaces), Array.from(astResources.types), inferred);
 
     const typeNameToRules = getTypeNameToRules(astResources);
@@ -356,7 +356,7 @@ export type InterfaceInfo = {
 // use only after type consistancy validation
 export function collectAllInterfaces(grammar: Grammar): Map<string, InterfaceInfo> {
     const astResources = collectAllAstResources([grammar]);
-    const inferred = collectInferredTypes(Array.from(astResources.parserRules), Array.from(astResources.datatypeRules));
+    const inferred = collectInferredTypes(Array.from(astResources.parserRules));
     const declared = collectDeclaredTypes(Array.from(astResources.interfaces), Array.from(astResources.types), inferred);
 
     const typeNameToRules = getTypeNameToRules(astResources);
