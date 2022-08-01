@@ -42,7 +42,7 @@
             "asyncArrow": "always",
             "named": "never"
         }],
-        "semi": [2, "always"],                            // Always use semicolons at end of statement
+        "semi": ["error", "always"],                      // Always use semicolons at end of statement
         "quotes": [2, "single", { "avoidEscape": true }], // Prefer single quotes
         "use-isnan": "error",                             // isNaN(i) Number.isNaN(i) instead of i === NaN
         "header/header": [                                // Use MIT/Generated file header
@@ -50,6 +50,9 @@
             "block",
             { "pattern": "MIT License|DO NOT EDIT MANUALLY!" }
         ],
+        "camelcase": "error",
+        "curly": "error",
+        "eol-last": "error",
         // List of [@typescript-eslint rules](https://github.com/typescript-eslint/typescript-eslint/tree/master/packages/eslint-plugin#supported-rules)
         "@typescript-eslint/adjacent-overload-signatures": "error", // grouping same method names
         "@typescript-eslint/array-type": ["error", {                // string[] instead of Array<string>
@@ -69,6 +72,8 @@
         "@typescript-eslint/prefer-for-of": "error",                // prefer for-of loop over arrays
         "@typescript-eslint/prefer-namespace-keyword": "error",     // prefer namespace over module in TypeScript
         "@typescript-eslint/triple-slash-reference": "error",       // ban /// <reference />, prefer imports
-        "@typescript-eslint/type-annotation-spacing": "error"       // consistent space around colon ':'
+        "@typescript-eslint/type-annotation-spacing": "error",      // consistent space around colon ':'
+        "no-shadow": "off",
+        "@typescript-eslint/no-shadow": [ "error", { "hoist": "all" } ]
     }
 }

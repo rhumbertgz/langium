@@ -38,28 +38,23 @@ export function generateJava(domainmodel: Domainmodel, fileName: string, destina
 }
 
 function generateAbstractElements(destination: string, elements: Array<AbstractElement | Type>, filePath: string): string {
-
-    function generateAbstractElementsInternal(elements: Array<AbstractElement | Type>, filePath: string): string {
-        const fullPath = path.join(destination, filePath);
-        if (!fs.existsSync(fullPath)) {
-            fs.mkdirSync(fullPath, { recursive: true });
-        }
-
-        const packagePath = filePath.replace(/\//g, '.').replace(/^\.+/, '');
-        for (const elem of elements) {
-            if (isPackageDeclaration(elem)) {
-                generateAbstractElementsInternal(elem.elements, path.join(filePath, elem.name.replace(/\./g, '/')));
-            } else if (isEntity(elem)) {
-                const fileNode = new CompositeGeneratorNode();
-                fileNode.append(`package ${packagePath};`, NL, NL);
-                generateEntity(elem, fileNode);
-                fs.writeFileSync(path.join(fullPath, `${elem.name}.java`), processGeneratorNode(fileNode));
-            }
-        }
-        return fullPath;
+    const fullPath = path.join(destination, filePath);
+    if (!fs.existsSync(fullPath)) {
+        fs.mkdirSync(fullPath, { recursive: true });
     }
 
-    return generateAbstractElementsInternal(elements, filePath);
+    const packagePath = filePath.replace(/\//g, '.').replace(/^\.+/, '');
+    for (const elem of elements) {
+        if (isPackageDeclaration(elem)) {
+            generateAbstractElements(destination, elem.elements, path.join(filePath, elem.name.replace(/\./g, '/')));
+        } else if (isEntity(elem)) {
+            const fileNode = new CompositeGeneratorNode();
+            fileNode.append(`package ${packagePath};`, NL, NL);
+            generateEntity(elem, fileNode);
+            fs.writeFileSync(path.join(fullPath, `${elem.name}.java`), processGeneratorNode(fileNode));
+        }
+    }
+    return fullPath;
 }
 
 function generateEntity(entity: Entity, fileNode: CompositeGeneratorNode): void {

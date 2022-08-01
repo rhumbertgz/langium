@@ -60,7 +60,7 @@ export class DefaultGoToResolverProvider implements GoToResolver {
         if (goToLink) {
             return [LocationLink.create(
                 goToLink.targetDocument.textDocument.uri,
-                (this.findActualNodeFor(goToLink.target) ?? goToLink.target).range,
+                (goToLink.target.element.$cstNode ?? goToLink.target).range,
                 goToLink.target.range,
                 goToLink.source.range
             )];
@@ -77,15 +77,5 @@ export class DefaultGoToResolverProvider implements GoToResolver {
             }
         }
         return undefined;
-    }
-
-    protected findActualNodeFor(cstNode: CstNode): CstNode | undefined {
-        let actualNode: CstNode | undefined = cstNode;
-        while (!actualNode?.element?.$cstNode) {
-            if (!actualNode)
-                return undefined;
-            actualNode = actualNode.parent;
-        }
-        return actualNode.element.$cstNode;
     }
 }

@@ -439,8 +439,8 @@ describe('MultiMode Lexing', () => {
     // Multi-mode token builder, filters tokens by state, and sets up push/pop behavior
     // Without this, we have no multi-mode lexing from the grammar alone
     class MultiModeTokenBuilder extends DefaultTokenBuilder {
-        buildTokens(grammar: Grammar, options?: { caseInsensitive?: boolean }): TokenVocabulary {
-            const tokenTypes: TokenType[] = super.buildTokens(grammar, options) as TokenType[];
+        buildTokens(testGrammar: Grammar, options?: { caseInsensitive?: boolean }): TokenVocabulary {
+            const tokenTypes: TokenType[] = super.buildTokens(testGrammar, options) as TokenType[];
             return {
                 modes: {
                     up: tokenTypes.filter(token => !['LowStr'].includes(token.name)),

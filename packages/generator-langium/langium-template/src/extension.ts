@@ -46,7 +46,7 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     };
 
     // Create the language client and start the client.
-    const client = new LanguageClient(
+    const languageClient = new LanguageClient(
         '<%= language-id %>',
         '<%= RawLanguageName %>',
         serverOptions,
@@ -54,6 +54,6 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     );
 
     // Start the client. This will also launch the server
-    client.start();
-    return client;
+    languageClient.start();
+    return languageClient;
 }

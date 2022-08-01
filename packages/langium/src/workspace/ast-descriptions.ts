@@ -78,9 +78,9 @@ export class DefaultAstNodeDescriptionProvider implements AstNodeDescriptionProv
         }
         for (const node of streamContents(rootNode)) {
             await interruptAndCheck(cancelToken);
-            const name = this.nameProvider.getName(node);
-            if (name) {
-                descr.push(this.createDescription(node, name, document));
+            const nodeName = this.nameProvider.getName(node);
+            if (nodeName) {
+                descr.push(this.createDescription(node, nodeName, document));
             }
         }
         return descr;

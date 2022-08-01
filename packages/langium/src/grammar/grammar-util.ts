@@ -93,7 +93,9 @@ function findNameAssignmentInternal(type: ast.AbstractType, cashed: Map<ast.Abst
         return childAssignment;
     }
 
-    if (cashed.has(type)) return cashed.get(type);
+    if (cashed.has(type)) {
+        return cashed.get(type);
+    }
     cashed.set(type, undefined);
     for (const node of streamAllContents(type)) {
         if (ast.isAssignment(node) && node.feature.toLowerCase() === 'name') {
@@ -476,7 +478,9 @@ function computeGrammarScope(services: LangiumServices, grammar: ast.Grammar): P
     const processTypeNode = processTypeNodeWithNodeLocator(services.workspace.AstNodeLocator);
     const processActionNode = processActionNodeWithNodeDescriptionProvider(descriptions);
     for (const node of streamAllContents(grammar)) {
-        if (ast.isReturnType(node)) continue;
+        if (ast.isReturnType(node)) {
+            continue;
+        }
         processActionNode(node, document, scopes);
         processTypeNode(node, document, scopes);
         const container = node.$container;

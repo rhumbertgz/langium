@@ -113,10 +113,10 @@ export async function generate(config: LangiumConfig, options: GenerateOptions):
     const all = await buildAll(config);
 
     let hasErrors = false;
-    for (const [path, document] of all) {
+    for (const [filePath, document] of all) {
         const diagnostics = document.diagnostics ?? [];
         for (const diagnostic of diagnostics) {
-            const message = `${getFilePath(path, config)}:${diagnostic.range.start.line + 1}:${diagnostic.range.start.character + 1} - ${diagnostic.message}`;
+            const message = `${getFilePath(filePath, config)}:${diagnostic.range.start.line + 1}:${diagnostic.range.start.character + 1} - ${diagnostic.message}`;
             if (diagnostic.severity === 1) {
                 log('error', options, chalk.red(message));
             } else if (diagnostic.severity === 2) {
@@ -221,20 +221,20 @@ async function rmdirWithFail(dirPath: string, expectedFiles: string[], options: 
     }
 }
 
-async function mkdirWithFail(path: string, options: GenerateOptions): Promise<boolean> {
+async function mkdirWithFail(filePath: string, options: GenerateOptions): Promise<boolean> {
     try {
-        await fs.mkdirs(path);
+        await fs.mkdirs(filePath);
         return false;
     } catch (e) {
-        log('error', options, `Failed to create directory ${chalk.red.bold(path)}`, e);
+        log('error', options, `Failed to create directory ${chalk.red.bold(filePath)}`, e);
         return true;
     }
 }
 
-async function writeWithFail(path: string, content: string, options: GenerateOptions): Promise<void> {
+async function writeWithFail(filePath: string, content: string, options: GenerateOptions): Promise<void> {
     try {
-        await fs.writeFile(path, content);
+        await fs.writeFile(filePath, content);
     } catch (e) {
-        log('error', options, `Failed to write file to ${chalk.red.bold(path)}`, e);
+        log('error', options, `Failed to write file to ${chalk.red.bold(filePath)}`, e);
     }
 }

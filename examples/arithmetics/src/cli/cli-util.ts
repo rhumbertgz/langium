@@ -43,8 +43,14 @@ export async function extractAstNode<T extends AstNode>(fileName: string, extens
 }
 
 export function applyOp(op: '+' | '-' | '*' | '/'): (x: number, y: number) => number {
-    if (op === '+') return (x, y) => x + y;
-    if (op === '-') return (x, y) => x - y;
-    if (op === '*') return (x, y) => x * y;
+    if (op === '+') {
+        return (x, y) => x + y;
+    }
+    if (op === '-') {
+        return (x, y) => x - y;
+    }
+    if (op === '*') {
+        return (x, y) => x * y;
+    }
     return (x, y) => y === 0 ? x : x / y;
 }

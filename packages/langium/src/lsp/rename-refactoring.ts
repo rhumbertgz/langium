@@ -50,10 +50,14 @@ export class DefaultRenameHandler implements RenameHandler {
     async renameElement(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
         const changes: Record<string, TextEdit[]> = {};
         const rootNode = document.parseResult.value.$cstNode;
-        if (!rootNode) return undefined;
+        if (!rootNode) {
+            return undefined;
+        }
         const offset = document.textDocument.offsetAt(params.position);
         const leafNode = findLeafNodeAtOffset(rootNode, offset);
-        if (!leafNode) return undefined;
+        if (!leafNode) {
+            return undefined;
+        }
         const targetNode = this.references.findDeclaration(leafNode) ?? leafNode;
         const options = { onlyLocal: false, includeDeclaration: true };
         const references = this.references.findReferences(targetNode.element, options);

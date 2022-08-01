@@ -66,7 +66,9 @@ export function prepareLangiumParser(services: LangiumServices): LangiumParser {
 }
 
 function toTokenTypeDictionary(buildTokens: TokenVocabulary): TokenTypeDictionary {
-    if (isTokenTypeDictionary(buildTokens)) return buildTokens;
+    if (isTokenTypeDictionary(buildTokens)) {
+        return buildTokens;
+    }
     const tokens = isIMultiModeLexerDefinition(buildTokens) ? Object.values(buildTokens.modes).flat() : buildTokens;
     const res: TokenTypeDictionary = {};
     tokens.forEach(token => res[token.name] = token);
@@ -75,13 +77,17 @@ function toTokenTypeDictionary(buildTokens: TokenVocabulary): TokenTypeDictionar
 
 function getRule(ctx: ParserContext, name: string): Rule {
     const rule = ctx.rules.get(name);
-    if (!rule) throw new Error(`Rule "${name}" not found."`);
+    if (!rule) {
+        throw new Error(`Rule "${name}" not found."`);
+    }
     return rule;
 }
 
 function getToken(ctx: ParserContext, name: string): TokenType {
     const token = ctx.tokens[name];
-    if (!token) throw new Error(`Token "${name}" not found."`);
+    if (!token) {
+        throw new Error(`Token "${name}" not found."`);
+    }
     return token;
 }
 

@@ -150,10 +150,18 @@ function groupKeywords(keywords: string[], caseInsensitive: boolean | undefined)
     });
 
     const res = [];
-    if (groups.letter.length) res.push(`\\b(${groups.letter.join('|')})\\b`);
-    if (groups.leftSpecial.length) res.push(`\\B(${groups.leftSpecial.join('|')})\\b`);
-    if (groups.rightSpecial.length) res.push(`\\b(${groups.rightSpecial.join('|')})\\B`);
-    if (groups.special.length) res.push(`\\B(${groups.special.join('|')})\\B`);
+    if (groups.letter.length) {
+        res.push(`\\b(${groups.letter.join('|')})\\b`);
+    }
+    if (groups.leftSpecial.length) {
+        res.push(`\\B(${groups.leftSpecial.join('|')})\\b`);
+    }
+    if (groups.rightSpecial.length) {
+        res.push(`\\b(${groups.rightSpecial.join('|')})\\B`);
+    }
+    if (groups.special.length) {
+        res.push(`\\B(${groups.special.join('|')})\\B`);
+    }
     return res;
 }
 

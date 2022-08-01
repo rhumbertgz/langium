@@ -67,7 +67,9 @@ export class DefaultReferences implements References {
                     for (const ref of reference) {
                         if (isReference(ref)) {
                             const target = this.processReference(ref);
-                            if (target && target.text === sourceCstNode.text) return target;
+                            if (target && target.text === sourceCstNode.text) {
+                                return target;
+                            }
                         }
                     }
                 }

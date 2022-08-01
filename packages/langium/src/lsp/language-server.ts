@@ -177,91 +177,91 @@ export function addDiagnosticsHandler(connection: Connection, services: LangiumS
     });
 }
 
-export function addCompletionHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addCompletionHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onCompletion(createRequestHandler(
         (services, document, params, cancelToken) => {
             return services.lsp.completion.CompletionProvider.getCompletion(document, params, cancelToken);
         },
-        services
+        sharedServices
     ));
 }
 
-export function addFindReferencesHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addFindReferencesHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onReferences(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.ReferenceFinder.findReferences(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addCodeActionHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addCodeActionHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onCodeAction(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.CodeActionProvider?.getCodeActions(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addDocumentSymbolHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addDocumentSymbolHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onDocumentSymbol(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.DocumentSymbolProvider.getSymbols(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addGotoDefinitionHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addGotoDefinitionHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onDefinition(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.GoToResolver.goToDefinition(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addDocumentHighlightsHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addDocumentHighlightsHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onDocumentHighlight(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.DocumentHighlighter.findHighlights(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addHoverHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addHoverHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onHover(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.HoverProvider.getHoverContent(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addFoldingRangeHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addFoldingRangeHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onFoldingRanges(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.FoldingRangeProvider.getFoldingRanges(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addFormattingHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addFormattingHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onDocumentFormatting(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.Formatter?.formatDocument(document, params, cancelToken),
-        services
+        sharedServices
     ));
     connection.onDocumentRangeFormatting(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.Formatter?.formatDocumentRange(document, params, cancelToken),
-        services
+        sharedServices
     ));
     connection.onDocumentOnTypeFormatting(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.Formatter?.formatDocumentOnType(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addRenameHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addRenameHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     connection.onRenameRequest(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.RenameHandler.renameElement(document, params, cancelToken),
-        services
+        sharedServices
     ));
     connection.onPrepareRename(createRequestHandler(
         (services, document, params, cancelToken) => services.lsp.RenameHandler.prepareRename(document, params, cancelToken),
-        services
+        sharedServices
     ));
 }
 
-export function addSemanticTokenHandler(connection: Connection, services: LangiumSharedServices): void {
+export function addSemanticTokenHandler(connection: Connection, sharedServices: LangiumSharedServices): void {
     const errorMessage = 'No semantic token provider registered';
     connection.languages.semanticTokens.on(createServerRequestHandler(
         (services, document, params, cancelToken) => {
@@ -270,7 +270,7 @@ export function addSemanticTokenHandler(connection: Connection, services: Langiu
             }
             return new ResponseError<void>(0, errorMessage);
         },
-        services
+        sharedServices
     ));
     connection.languages.semanticTokens.onDelta(createServerRequestHandler(
         (services, document, params, cancelToken) => {
@@ -279,7 +279,7 @@ export function addSemanticTokenHandler(connection: Connection, services: Langiu
             }
             return new ResponseError<void>(0, errorMessage);
         },
-        services
+        sharedServices
     ));
     connection.languages.semanticTokens.onRange(createServerRequestHandler(
         (services, document, params, cancelToken) => {
@@ -288,7 +288,7 @@ export function addSemanticTokenHandler(connection: Connection, services: Langiu
             }
             return new ResponseError<void>(0, errorMessage);
         },
-        services
+        sharedServices
     ));
 }
 

@@ -538,10 +538,10 @@ export class StreamImpl<S, T> implements Stream<T> {
         if (depth <= 0) {
             return this as unknown as FlatStream<T, D>;
         }
-        const stream = depth > 1 ? this.flat(depth - 1) as unknown as StreamImpl<S, T> : this;
+        const streamImpl = depth > 1 ? this.flat(depth - 1) as unknown as StreamImpl<S, T> : this;
         type FlatMapState = { this: S, iterator?: Iterator<T, undefined> }
         return new StreamImpl<FlatMapState, T>(
-            () => ({ this: stream.startFn() }),
+            () => ({ this: streamImpl.startFn() }),
             (state) => {
                 do {
                     if (state.iterator) {
@@ -552,7 +552,7 @@ export class StreamImpl<S, T> implements Stream<T> {
                             return next;
                         }
                     }
-                    const { done, value } = stream.nextFn(state.this);
+                    const { done, value } = streamImpl.nextFn(state.this);
                     if (!done) {
                         if (isIterable(value)) {
                             state.iterator = value[Symbol.iterator]() as Iterator<T>;
@@ -786,29 +786,29 @@ export namespace Reduction {
     /**
      * Compute the sum of a number stream.
      */
-    export function sum(stream: Stream<number>): number {
-        return stream.reduce((a, b) => a + b, 0);
+    export function sum(numberStream: Stream<number>): number {
+        return numberStream.reduce((a, b) => a + b, 0);
     }
 
     /**
      * Compute the product of a number stream.
      */
-    export function product(stream: Stream<number>): number {
-        return stream.reduce((a, b) => a * b, 0);
+    export function product(numberStream: Stream<number>): number {
+        return numberStream.reduce((a, b) => a * b, 0);
     }
 
     /**
      * Compute the minimum of a number stream. Returns `undefined` if the stream is empty.
      */
-    export function min(stream: Stream<number>): number | undefined {
-        return stream.reduce((a, b) => Math.min(a, b));
+    export function min(numberStream: Stream<number>): number | undefined {
+        return numberStream.reduce((a, b) => Math.min(a, b));
     }
 
     /**
      * Compute the maximum of a number stream. Returns `undefined` if the stream is empty.
      */
-    export function max(stream: Stream<number>): number | undefined {
-        return stream.reduce((a, b) => Math.max(a, b));
+    export function max(numberStream: Stream<number>): number | undefined {
+        return numberStream.reduce((a, b) => Math.max(a, b));
     }
 
 }

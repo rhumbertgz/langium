@@ -89,10 +89,10 @@ describe('A cyclic dependency', () => {
     });
 
     test('should be constructable', () => {
-        class A { }
+        class Test { }
         expect(
-            new (createA(A).testee)()
-        ).toBeInstanceOf(A);
+            new (createA(Test).testee)()
+        ).toBeInstanceOf(Test);
     });
 
     test('should be getable', () => {
@@ -250,7 +250,7 @@ describe('The inject function', () => {
         }
 
         class B extends A {
-            constructor(a: A) {
+            constructor(value: A) {
                 super();
             }
             a = 1;

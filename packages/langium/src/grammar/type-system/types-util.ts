@@ -49,7 +49,9 @@ export class UnionType {
         const typeNode = new CompositeGeneratorNode();
         typeNode.contents.push(`export type ${this.name} = ${propertyTypeArrayToString(this.union)};`, NL);
 
-        if (this.reflection) pushReflectionInfo(this.name, typeNode);
+        if (this.reflection) {
+            pushReflectionInfo(this.name, typeNode);
+        }
         return processGeneratorNode(typeNode);
     }
 }
@@ -205,8 +207,8 @@ export function collectSuperTypes(ruleNode: AbstractType): Set<Interface> {
             if (isInterface(superType.ref)) {
                 superTypes.add(superType.ref);
                 const collectedSuperTypes = collectSuperTypes(superType.ref);
-                for (const superType of collectedSuperTypes) {
-                    superTypes.add(superType);
+                for (const collectedSuperType of collectedSuperTypes) {
+                    superTypes.add(collectedSuperType);
                 }
             }
         });

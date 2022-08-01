@@ -11,9 +11,9 @@ import { MultiMap } from '../../utils/collections';
 
 export function collectDeclaredTypes(interfaces: Interface[], types: Type[], inferredTypes: AstTypes): AstTypes {
 
-    function addSuperTypes(child: string, types: AstTypes) {
-        const childType = types.unions.find(e => e.name === child) ??
-            types.interfaces.find(e => e.name === child);
+    function addSuperTypes(child: string, superTypes: AstTypes) {
+        const childType = superTypes.unions.find(e => e.name === child) ??
+            superTypes.interfaces.find(e => e.name === child);
         if (childType) {
             childToSuper.get(child).forEach(e => childType.superTypes.add(e));
         }

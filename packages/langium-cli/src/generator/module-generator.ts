@@ -40,12 +40,12 @@ export function generateModule(grammars: langium.Grammar[], config: LangiumConfi
 
     for (const grammar of grammars) {
         if (grammar.name) {
-            const config = grammarConfigMap.get(grammar)!;
+            const grammarConfig = grammarConfigMap.get(grammar)!;
             node.append('export const ', grammar.name, 'LanguageMetaData: LanguageMetaData = {', NL);
             node.indent(metaData => {
-                metaData.append(`languageId: '${config.id}',`, NL);
-                metaData.append(`fileExtensions: [${config.fileExtensions && config.fileExtensions.map(e => appendQuotesAndDot(e)).join(', ')}],`, NL);
-                metaData.append(`caseInsensitive: ${!!config.caseInsensitive}`, NL);
+                metaData.append(`languageId: '${grammarConfig.id}',`, NL);
+                metaData.append(`fileExtensions: [${grammarConfig.fileExtensions && grammarConfig.fileExtensions.map(e => appendQuotesAndDot(e)).join(', ')}],`, NL);
+                metaData.append(`caseInsensitive: ${!!grammarConfig.caseInsensitive}`, NL);
             });
             node.append('};', NL, NL);
         }

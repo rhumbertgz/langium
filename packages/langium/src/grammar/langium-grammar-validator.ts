@@ -141,7 +141,7 @@ export class LangiumGrammarValidator {
      * Check whether any rule defined in this grammar is a duplicate of an already defined rule or an imported rule
      */
     checkUniqueRuleName(grammar: ast.Grammar, accept: ValidationAcceptor): void {
-        const extractor = (grammar: ast.Grammar) => stream(grammar.rules).filter(rule => !isEmptyRule(rule));
+        const extractor = (g: ast.Grammar) => stream(g.rules).filter(rule => !isEmptyRule(rule));
         this.checkUniqueName(grammar, accept, extractor, 'rule');
     }
 
@@ -149,7 +149,7 @@ export class LangiumGrammarValidator {
      * Check whether any type defined in this grammar is a duplicate of an already defined type or an imported type
      */
     checkUniqueTypeName(grammar: ast.Grammar, accept: ValidationAcceptor): void {
-        const extractor = (grammar: ast.Grammar) => stream(grammar.types).concat(grammar.interfaces);
+        const extractor = (g: ast.Grammar) => stream(g.types).concat(g.interfaces);
         this.checkUniqueName(grammar, accept, extractor, 'type');
     }
 
@@ -255,9 +255,9 @@ export class LangiumGrammarValidator {
             types.add(interfaceType.name);
         }
         // Collect type/interface definitions from imported grammars
-        resolveTransitiveImports(this.documents, grammar).forEach((grammar) => {
-            grammar.types.forEach(type => types.add(type.name));
-            grammar.interfaces.forEach(iface => types.add(iface.name));
+        resolveTransitiveImports(this.documents, grammar).forEach(importedGrammar => {
+            importedGrammar.types.forEach(type => types.add(type.name));
+            importedGrammar.interfaces.forEach(iface => types.add(iface.name));
         });
 
         for (const rule of grammar.rules.filter(ast.isParserRule)) {
@@ -473,7 +473,9 @@ export class LangiumGrammarValidator {
     }
 
     checkPropertyNameDuplication(grammar: ast.Grammar, accept: ValidationAcceptor): void {
-        if (grammar.interfaces.length === 0) return;
+        if (grammar.interfaces.length === 0) {
+            return;
+        }
 
         const nameToInterfaceInfo = collectAllInterfaces(grammar);
 
@@ -482,7 +484,9 @@ export class LangiumGrammarValidator {
             this.collectPropertyNamesForHierarchy(nameToInterfaceInfo, new Set(), propertyNameToNode, interfaceName);
 
             for (const [propertyName, nodes] of propertyNameToNode.entriesGroupedByKey()) {
-                if (nodes.length < 2) continue;
+                if (nodes.length < 2) {
+                    continue;
+                }
                 for (const node of nodes) {
                     const errorMessage = `A property '${propertyName}' has to be unique for the whole hierarchy.`;
                     if (ast.isInterface(node)) {
@@ -499,16 +503,15 @@ export class LangiumGrammarValidator {
     }
 
     private collectPropertyNamesForHierarchy(nameToInterfaceInfo: Map<string, InterfaceInfo>, visited: Set<string>, result: MultiMap<string, ast.Interface | readonly ast.ParserRule[]>, interfaceName: string): void {
-        function collectPropertyNamesForHierarchyInternal(interfaceName: string) {
-            if (visited.has(interfaceName)) return;
-            visited.add(interfaceName);
-            const interfaceInfo = nameToInterfaceInfo.get(interfaceName);
-            if (interfaceInfo) {
-                interfaceInfo.type.properties.forEach(property => result.add(property.name, interfaceInfo.node));
-                interfaceInfo.type.interfaceSuperTypes.forEach(superType => collectPropertyNamesForHierarchyInternal(superType));
-            }
+        if (visited.has(interfaceName)) {
+            return;
         }
-        collectPropertyNamesForHierarchyInternal(interfaceName);
+        visited.add(interfaceName);
+        const interfaceInfo = nameToInterfaceInfo.get(interfaceName);
+        if (interfaceInfo) {
+            interfaceInfo.type.properties.forEach(property => result.add(property.name, interfaceInfo.node));
+            interfaceInfo.type.interfaceSuperTypes.forEach(superType => this.collectPropertyNamesForHierarchy(nameToInterfaceInfo, visited, result, superType));
+        }
     }
 
     checkInvalidCharacterRange(range: ast.CharacterRange, accept: ValidationAcceptor): void {

@@ -68,7 +68,9 @@ function evalExpression(ctx: InterpreterContext, expr: Expression): number {
     if (isBinaryExpression(expr)) {
         const left = evalExpression(ctx, expr.left);
         const right = evalExpression(ctx, expr.right);
-        if (right === undefined) return left;
+        if (right === undefined) {
+            return left;
+        }
         return applyOp(expr.operator)(left, right);
     }
     if (isNumberLiteral(expr)) {

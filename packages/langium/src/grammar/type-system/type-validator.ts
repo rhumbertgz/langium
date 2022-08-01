@@ -52,7 +52,9 @@ export function validateTypesConsistency(grammar: Grammar, accept: ValidationAcc
             checkConsistentlyDeclaredType(typeInfo, propertyMap, accept);
         }
 
-        if (!isInferredAndDeclared(typeInfo)) continue;
+        if (!isInferredAndDeclared(typeInfo)) {
+            continue;
+        }
         const errorToRuleNodes = applyErrorToRuleNodes(typeInfo.nodes, typeName);
         const errorToInvalidRuleNodes = applyMissingAssignmentErrorToRuleNodes(typeInfo.nodes, typeName);
         const errorToAssignment = applyErrorToAssignment(typeInfo.nodes, accept);
@@ -169,9 +171,9 @@ function collectAllSuperProperties(
     }
     for (const superType of type.interfaceSuperTypes) {
         const typeInfo = resources.get(superType) as InferredInfo & DeclaredInfo;
-        const type = typeInfo?.[mode];
-        if (isInterface(type)) {
-            collectAllSuperProperties(type, mode, resources, map, visitedTypes);
+        const interfaceType = typeInfo?.[mode];
+        if (isInterface(interfaceType)) {
+            collectAllSuperProperties(interfaceType, mode, resources, map, visitedTypes);
         }
     }
 
@@ -233,8 +235,8 @@ export function collectValidationResources(grammar: Grammar): ValidationResource
             const node = stream(astResources.types).find(e => e.name === type.name) ??
                 stream(astResources.interfaces).find(e => e.name === type.name);
             if (node) {
-                const inferred = inferredInfo.get(type.name);
-                acc.set(type.name, inferred ? {...inferred, declared: type, node } : { declared: type, node });
+                const inferredType = inferredInfo.get(type.name);
+                acc.set(type.name, inferredType ? {...inferredType, declared: type, node } : { declared: type, node });
             }
             return acc;
         }, new Map<string, InferredInfo | DeclaredInfo | InferredInfo & DeclaredInfo>());
@@ -369,7 +371,9 @@ export function collectAllInterfaces(grammar: Grammar): Map<string, InterfaceInf
         .reduce((acc, type) => {
             if (!acc.has(type.name)) {
                 const node = stream(astResources.interfaces).find(e => e.name === type.name);
-                if (node) acc.set(type.name, { type, node });
+                if (node) {
+                    acc.set(type.name, { type, node });
+                }
             }
             return acc;
         }, inferredInterfaces);

@@ -114,11 +114,8 @@ class LangiumGenerator extends Generator {
 
         this.sourceRoot(path.join(__dirname, TEMPLATE_DIR));
         ['.', '.vscode', '.eslintrc.json', '.vscodeignore'].forEach(
-            (path: string) => {
-                const replaceTemplateWords = (
-                    answers: Answers,
-                    content: Buffer
-                ): string =>
+            (filePath: string) => {
+                const replaceTemplateWords = (content: Buffer): string =>
                     [
                         [EXTENSION_NAME, this.answers.extensionName],
                         [RAW_LANGUAGE_NAME, this.answers.rawLanguageName],
@@ -138,24 +135,21 @@ class LangiumGenerator extends Generator {
                         content.toString()
                     );
 
-                const replaceTemplateNames = (
-                    answers: Answers,
-                    path: string
-                ): string =>
-                    path.replace(new RegExp(LANGUAGE_ID, 'g'), languageId);
+                const replaceTemplateNames = (templateName: string): string =>
+                    templateName.replace(new RegExp(LANGUAGE_ID, 'g'), languageId);
 
                 this.fs.copy(
-                    this.templatePath(path),
+                    this.templatePath(filePath),
                     this.destinationPath(
                         USER_DIR,
                         this.answers.extensionName,
-                        path
+                        filePath
                     ),
                     {
                         process: (content: Buffer) =>
-                            replaceTemplateWords(this.answers, content),
-                        processDestinationPath: (path: string) =>
-                            replaceTemplateNames(this.answers, path),
+                            replaceTemplateWords(content),
+                        processDestinationPath: (destPath: string) =>
+                            replaceTemplateNames(destPath),
                     }
                 );
             }

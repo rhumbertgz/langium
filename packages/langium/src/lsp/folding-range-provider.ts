@@ -99,9 +99,9 @@ export class DefaultFoldingRangeProvider implements FoldingRangeProvider {
     protected collectCommentFolding(document: LangiumDocument, node: AstNode, acceptor: FoldingRangeAcceptor): void {
         const cstNode = node.$cstNode;
         if (cstNode) {
-            for (const node of flattenCst(cstNode)) {
-                if (this.commentNames.includes(node.tokenType.name)) {
-                    const foldingRange = this.toFoldingRange(document, node, FoldingRangeKind.Comment);
+            for (const leafNode of flattenCst(cstNode)) {
+                if (this.commentNames.includes(leafNode.tokenType.name)) {
+                    const foldingRange = this.toFoldingRange(document, leafNode, FoldingRangeKind.Comment);
                     if (foldingRange) {
                         acceptor(foldingRange);
                     }

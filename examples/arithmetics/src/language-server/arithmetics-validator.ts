@@ -41,8 +41,12 @@ export class ArithmeticsValidator {
         };
 
         const evalExpr = (expr: Expression): void => {
-            if (isFunctionCall(expr) || isNumberLiteral(expr)) return;
-            if (isBinaryExpression(expr)) makeOp(expr, applyOp(expr.operator));
+            if (isFunctionCall(expr) || isNumberLiteral(expr)) {
+                return;
+            }
+            if (isBinaryExpression(expr)) {
+                makeOp(expr, applyOp(expr.operator));
+            }
         };
 
         evalExpr(def.expr);

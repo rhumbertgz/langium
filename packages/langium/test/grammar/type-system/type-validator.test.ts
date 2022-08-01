@@ -29,9 +29,9 @@ describe('validate params in types', () => {
         expect(diagnostics).toHaveLength(1);
 
         // verify location of diagnostic
-        const d = diagnostics[0];
-        expect(d.range.start).toEqual({ character: 8, line: 4 });
-        expect(d.range.end).toEqual({ character: 10, line: 4 });
+        const diagnostic = diagnostics[0];
+        expect(diagnostic.range.start).toEqual({ character: 8, line: 4 });
+        expect(diagnostic.range.end).toEqual({ character: 10, line: 4 });
     });
 
     // verifies that missing required params use the right msg & position
@@ -54,9 +54,9 @@ describe('validate params in types', () => {
         expect(diagnostics).toHaveLength(1);
 
         // verify the location of the single diagnostic error, should be only for the 2nd rule
-        const d = diagnostics[0];
-        expect(d.range.start).toEqual({ character: 8, line: 5 });
-        expect(d.range.end).toEqual({ character: 34, line: 5 });
+        const diagnostic = diagnostics[0];
+        expect(diagnostic.range.start).toEqual({ character: 8, line: 5 });
+        expect(diagnostic.range.end).toEqual({ character: 34, line: 5 });
     });
 
     // tests that an optional param in a declared type can be optionally present in a rule

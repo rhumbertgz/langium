@@ -427,7 +427,7 @@ function flattenTypes(alternatives: TypeAlternative[]): TypeAlternative[] {
                 if (existingProperty) {
                     altProperty.typeAlternatives
                         .filter(isNotInTypeAlternatives(existingProperty.typeAlternatives))
-                        .forEach(type => existingProperty.typeAlternatives.push(type));
+                        .forEach(typeAlternative => existingProperty.typeAlternatives.push(typeAlternative));
                 } else {
                     properties.push({ ...altProperty });
                 }
@@ -467,7 +467,9 @@ function comparePropertyType(a: PropertyType, b: PropertyType): boolean {
 }
 
 function compareLists<T>(a: T[], b: T[], eq: (x: T, y: T) => boolean = (x, y) => x === y): boolean {
-    if (a.length !== b.length) return false;
+    if (a.length !== b.length) {
+        return false;
+    }
     const distictAndSortedA = distictAndSorted(a);
     return distictAndSorted(b).every((e, i) => eq(e, distictAndSortedA[i]));
 }
