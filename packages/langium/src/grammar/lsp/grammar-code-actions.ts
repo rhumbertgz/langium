@@ -7,6 +7,7 @@
 import { CodeActionKind, Diagnostic } from 'vscode-languageserver';
 import { CodeActionParams } from 'vscode-languageserver-protocol';
 import { CodeAction, Command, Position, TextEdit } from 'vscode-languageserver-types';
+import { AstNode } from '../..';
 import { CodeActionProvider } from '../../lsp/code-action';
 import { getContainerOfType } from '../../utils/ast-util';
 import { findLeafNodeAtOffset } from '../../utils/cst-util';
