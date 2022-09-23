@@ -48,6 +48,8 @@ export class LangiumGrammarCodeActionProvider implements CodeActionProvider {
                 return this.fixMissingImport(diagnostic, document);
             case IssueCodes.UnnecessaryFileExtension:
                 return this.fixUnnecessaryFileExtension(diagnostic, document);
+            case IssueCodes.MissingReturns:
+                return this.fixMissingReturns(diagnostic, document);
             case IssueCodes.InvalidInfers:
             case IssueCodes.InvalidReturns:
                 return this.fixInvalidReturnsInfers(diagnostic, document);
@@ -66,7 +68,52 @@ export class LangiumGrammarCodeActionProvider implements CodeActionProvider {
         return undefined;
     }
 
-    private fixInvalidReturnsInfers(diagnostic: Diagnostic, document: LangiumDocument): CodeAction | undefined {
+    /**
+    * Returns whether an AST node of a given type exists within the range of a diagnostic
+    * Helpful to prevent code actions being suggested in the incorrect context
+    *
+    * @param diagnostic To use to determine the range to search for a node
+    * @param document To search within
+    * @param astTypePredicate To select the desired node
+    * @returns Whether or not the node exists
+    */
+    private astNodeExistsAtDiagnostic<T extends AstNode>(diagnostic: Diagnostic, document: LangiumDocument, astTypePredicate: (n: AstNode) => n is T): boolean {
+        const offset = document.textDocument.offsetAt(diagnostic.range.start);
+        const rootCst = document.parseResult.value.$cstNode;
+        if(rootCst) {
+            const container = getContainerOfType(findLeafNodeAtOffset(rootCst, offset)?.element, astTypePredicate);
+            return !!(container && container.$cstNode);
+        }
+        return false;
+    }
+
+    /**
+     * Adds missing returns for parser rule
+     *
+     * @param diagnostic Contains information for code action
+     * @param document To apply code action to
+     * @returns A CodeAction or nothing
+     */
+    private fixMissingReturns(diagnostic: Diagnostic, document: LangiumDocument): CodeAction | undefined {
+        const data = diagnostic.data as Record<string, string>;
+        if (this.astNodeExistsAtDiagnostic(diagnostic, document, ast.isParserRule) && data && data.suggestion && data.ruleTypeName) {
+            return {
+                title: `Add explicit return type for parser rule ${data.ruleTypeName}`,
+                kind: CodeActionKind.QuickFix,
+                diagnostics: [diagnostic],
+                edit: {
+                    changes: {
+                        [document.textDocument.uri]: [{
+                            range: diagnostic.range,
+                            newText: data.suggestion // suggestion adds missing 'return'
+                        }]
+                    }
+                }
+            };
+        }
+        return undefined;
+    }
+
         const data = diagnostic.data as DocumentSegment;
         if (data) {
             const text = document.textDocument.getText(data.range);

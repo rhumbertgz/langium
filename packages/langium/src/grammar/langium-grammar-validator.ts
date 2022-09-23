@@ -97,6 +97,7 @@ export namespace IssueCodes {
     export const InvalidReturns = 'invalid-returns';
     export const InvalidInfers = 'invalid-infers';
     export const MissingInfer = 'missing-infer';
+    export const MissingReturns = 'missing-returns';
     export const SuperfluousInfer = 'superfluous-infer';
     export const OptionalUnorderedGroup = 'optional-unordered-group';
 }
@@ -269,13 +270,31 @@ export class LangiumGrammarValidator {
             const isInfers = !rule.returnType && !rule.dataType;
             const ruleTypeName = getTypeName(rule);
             if (!isDataType && ruleTypeName && types.has(ruleTypeName) === isInfers) {
-                const keywordNode = isInfers ? findNodeForKeyword(rule.$cstNode, 'infer') : findNodeForKeyword(rule.$cstNode, 'returns');
-                accept('error', getMessage(ruleTypeName, isInfers), {
-                    node: rule.inferredType ?? rule,
-                    property: 'name',
-                    code: isInfers ? IssueCodes.InvalidInfers : IssueCodes.InvalidReturns,
-                    data: keywordNode && toDocumentSegment(keywordNode)
-                });
+                if(rule.inferredType === undefined) {
+                    // diagnostic should go on the rule name, since there is no explicit 'infers'
+                    accept('error', getMessage(ruleTypeName, isInfers), {
+                        node: rule,
+                        property: 'name',
+                        code: isInfers ? IssueCodes.MissingReturns : IssueCodes.InvalidReturns,
+                        data: {
+                            suggestion: `${ruleTypeName} returns ${ruleTypeName}`,
+                            ruleTypeName: ruleTypeName
+                        }
+                    });
+
+                } else {
+                    // diagnostic should go on the explict infers, which will be rewritten as returns
+                    accept('error', getMessage(ruleTypeName, isInfers), {
+                        node: rule,
+                        property: 'inferredType',
+                        code: isInfers ? IssueCodes.InvalidInfers : IssueCodes.InvalidReturns,
+                        data: {
+                            suggestion: `returns ${ruleTypeName}`,
+                            ruleTypeName: ruleTypeName
+                        }
+                    });
+
+                }
             } else if (isDataType && isInfers) {
                 const inferNode = findNodeForKeyword(rule.$cstNode, 'infer');
                 accept('error', 'Data type rules cannot infer a type.', {

@@ -100,4 +100,18 @@ describe('Langium grammar validation', () => {
             code: IssueCodes.SuperfluousInfer
         });
     });
+
+    test('Missing return should be added to parser rule', async () => {
+        const validationResult = await validate(`
+        grammar T
+        interface T { a: string }
+        T: 't' a=ID;
+        terminal ID returns string: /[a-z]+/;
+        `);
+        expectError(validationResult, /The type 'T' is already explicitly declared and cannot be inferred./, {
+            node: validationResult.document.parseResult.value.rules[0],
+            property: {name: 'name'},
+            code: IssueCodes.MissingReturns
+        });
+    });
 });
