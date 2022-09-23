@@ -115,6 +115,7 @@ export class LangiumGrammarCodeActionProvider implements CodeActionProvider {
         return undefined;
     }
 
+    private fixInvalidReturnsInfers(diagnostic: Diagnostic, document: LangiumDocument): CodeAction | undefined {
         const data = diagnostic.data as DocumentSegment;
         if (data) {
             const text = document.textDocument.getText(data.range);
